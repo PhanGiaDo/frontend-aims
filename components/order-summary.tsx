@@ -91,13 +91,6 @@ export default function OrderSummary() {
         >
           {selectedItems.length === 0 ? "Select Items to Checkout" : `Checkout (${selectedCount} items)`}
         </Button>
-
-        {/* Additional Info */}
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p>• Free shipping on orders over {formatCurrency(500000)}</p>
-          <p>• Rush order available for selected items</p>
-          <p>• VAT included in total price</p>
-        </div>
       </CardContent>
     </Card>
   )

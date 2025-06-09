@@ -13,17 +13,6 @@ export const metadata: Metadata = {
   title: "AIMS - An Internet Media Store",
 }
 
-if (typeof window !== "undefined") {
-  const originalError = console.error
-  console.error = (...args) => {
-    const [message] = args
-    if (typeof message === "string" && message.includes("Hydration failed")) {
-      return
-    }
-    originalError(...args)
-  }
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{

@@ -480,22 +480,13 @@ export default function CheckoutForm() {
               </div>
             </div>
 
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>• Heaviest item: {shippingCalculation.heaviestItemWeight.toFixed(1)}kg</p>
-              {shippingCalculation.regularItemsTotal > 100000 && (
-                <p>• Free shipping applied (orders over {formatCurrency(100000)})</p>
-              )}
-              <p>• Rush delivery: 2-hour delivery window</p>
-              <p>• Shipping fees are not subject to VAT</p>
-            </div>
-
             <Button
               type="submit"
               className="w-full"
               size="lg"
               disabled={isProcessing || !formData.deliveryInfo.province}
             >
-              {isProcessing ? "Processing..." : `Place Order - ${formatCurrency(finalTotal)}`}
+              {isProcessing ? "Processing..." : `Place Order`}
             </Button>
           </CardContent>
         </Card>
