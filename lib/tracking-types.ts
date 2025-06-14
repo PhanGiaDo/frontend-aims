@@ -1,12 +1,5 @@
 // Order tracking status
-export type TrackingStatus =
-  | "pending"
-  | "processing"
-  | "shipped"
-  | "out_for_delivery"
-  | "delivered"
-  | "cancelled"
-  | "refunded"
+export type TrackingStatus = "pending" | "approved" | "rejected" | "cancelled"
 
 // Tracking event
 export interface TrackingEvent {
@@ -23,9 +16,7 @@ export interface OrderTrackingInfo {
   tracking_code: string
   current_status: TrackingStatus
   order_date: string
-  estimated_delivery: string
   can_cancel: boolean
-  tracking_events: TrackingEvent[]
   order_details: {
     total_amount: number
     payment_method: string

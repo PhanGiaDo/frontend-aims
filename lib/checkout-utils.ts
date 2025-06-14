@@ -1,4 +1,4 @@
-import type { DeliveryInformation, Order, OrderLine, CheckoutFormData, ShippingCalculation } from "./checkout-types"
+import type { DeliveryInformation, CheckoutFormData, ShippingCalculation } from "./checkout-types"
 
 // Calculate shipping fees based on new rules
 export function calculateShippingFees(
@@ -11,7 +11,7 @@ export function calculateShippingFees(
   orderLines: Array<{
     product_id: number
     quantity: number
-    rush_order_using: boolean
+    rush_order: boolean // Changed from rush_order_using to rush_order
   }>,
 ): ShippingCalculation {
   const selectedItems = cartItems.filter((item) => item.selected)
@@ -19,37 +19,33 @@ export function calculateShippingFees(
   // Separate regular and rush items
   const regularItems = selectedItems.filter((item) => {
     const orderLine = orderLines.find((line) => line.product_id === item.product.product_id)
-    return !orderLine?.rush_order_using
+    return !orderLine?.rush_order // Changed from rush_order_using to rush_order
   })
 
   const rushItems = selectedItems.filter((item) => {
     const orderLine = orderLines.find((line) => line.product_id === item.product.product_id)
-    return orderLine?.rush_order_using
+    return orderLine?.rush_order // Changed from rush_order_using to rush_order
   })
 
-  // Calculate totals
+  // Rest of the function remains the same...
   const regularItemsTotal = regularItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   const rushItemsTotal = rushItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
 
-  // Find heaviest item weight
   const heaviestItemWeight = selectedItems.reduce((max, item) => {
     return Math.max(max, item.product.weight)
   }, 0)
 
-  // Calculate regular shipping
   let regularShipping = 0
   if (regularItems.length > 0) {
     regularShipping = calculateShippingByWeight(province, heaviestItemWeight)
   }
 
-  // Calculate rush shipping
   let rushShipping = 0
   if (rushItems.length > 0) {
     const rushShippingBase = calculateShippingByWeight(province, heaviestItemWeight)
-    rushShipping = rushShippingBase + 10000 // Additional 10,000 VND for rush delivery
+    rushShipping = rushShippingBase + 10000
   }
 
-  // Calculate free shipping discount
   let freeShippingDiscount = 0
   if (regularItemsTotal > 100000) {
     freeShippingDiscount = Math.min(regularShipping, 25000)
@@ -107,83 +103,34 @@ export async function createDeliveryInformation(
   return Math.floor(Math.random() * 10000) + 1
 }
 
-// Create order
-export async function createOrder(orderData: Omit<Order, "order_id">): Promise<number> {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  // This would be replaced with actual API call
-  console.log("Creating order:", orderData)
-
-  // Return mock order_id
-  return Math.floor(Math.random() * 10000) + 1
-}
-
-// Create order lines
-export async function createOrderLines(orderLines: Omit<OrderLine, "odline_id">[]): Promise<number[]> {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  // This would be replaced with actual API call
-  console.log("Creating order lines:", orderLines)
-
-  // Return mock order line IDs
-  return orderLines.map(() => Math.floor(Math.random() * 10000) + 1)
-}
-
-// Process complete checkout
+// Process complete checkout - simplified to only handle delivery info
 export async function processCheckout(
   checkoutData: CheckoutFormData,
-  cartItems: Array<{
-    product: any
-    quantity: number
-    selected: boolean
-  }>,
-  totals: {
-    subtotal: number
-    vat: number
-    total: number
-  },
   shippingCalculation: ShippingCalculation,
 ): Promise<{ success: boolean; orderId?: number; error?: string; clearCart?: boolean }> {
   try {
-    // Create delivery information
+    // Create delivery information with shipping fee
     const deliveryId = await createDeliveryInformation({
       ...checkoutData.deliveryInfo,
       shipping_fee: shippingCalculation.totalShipping,
     })
 
-    // Create order (shipping fees are not subject to VAT)
-    const orderId = await createOrder({
+    // Send order data to backend for Order and OrderLine creation
+    const orderPayload = {
       delivery_id: deliveryId,
-      total_before_vat: totals.subtotal + shippingCalculation.totalShipping,
-      total_after_vat: totals.total + shippingCalculation.totalShipping,
-      status: "pending",
-      vat: totals.vat, // VAT only applies to products, not shipping
-    })
+      status: checkoutData.status,
+      total_after_VAT: checkoutData.total_after_VAT + shippingCalculation.totalShipping,
+      total_before_VAT: checkoutData.total_before_VAT + shippingCalculation.totalShipping,
+      vat: checkoutData.vat,
+      orderLineList: checkoutData.orderLineList,
+    }
 
-    // Create order lines
-    const selectedItems = cartItems.filter((item) => item.selected)
-    const orderLinesData = checkoutData.orderLines.map((line) => {
-      const cartItem = selectedItems.find((item) => item.product.product_id === line.product_id)
-      const productTotal = cartItem ? cartItem.product.price * line.quantity : 0
+    // This would be the actual API call to backend
+    console.log("Sending order payload to backend:", orderPayload)
 
-      // Get rush delivery info if applicable
-      const rushInfo = checkoutData.rushDeliveryInfo.find((info) => info.product_id === line.product_id)
-
-      return {
-        order_id: orderId,
-        product_id: line.product_id,
-        status: "pending",
-        quantity: line.quantity,
-        total_fee: productTotal,
-        rush_order_using: line.rush_order_using,
-        delivery_time: line.rush_order_using && rushInfo ? rushInfo.delivery_time : undefined,
-        instructions: line.rush_order_using && rushInfo ? rushInfo.instructions : line.instructions,
-      }
-    })
-
-    await createOrderLines(orderLinesData)
+    // Simulate backend order creation
+    const orderId = Math.floor(Math.random() * 10000) + 1
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     return { success: true, orderId, clearCart: true }
   } catch (error) {

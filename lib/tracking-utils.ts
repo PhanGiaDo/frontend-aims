@@ -19,26 +19,16 @@ export async function getOrderTracking(trackingCode: string): Promise<OrderTrack
 
   const orderId = Number.parseInt(orderIdMatch[1])
 
-  // Mock tracking data
+  // Mock tracking data with only 4 statuses
   const mockTrackingInfo: OrderTrackingInfo = {
     order_id: orderId,
     tracking_code: trackingCode,
     current_status: "pending",
     order_date: "2024-01-15T10:30:00Z",
-    estimated_delivery: "2024-01-20T16:00:00Z",
-    can_cancel: true, // Can cancel if status is pending
-    tracking_events: [
-      {
-        id: 1,
-        status: "pending",
-        description: "Order received and payment confirmed",
-        timestamp: "2024-01-15T10:30:00Z",
-        location: "AIMS Warehouse",
-      },
-    ],
+    can_cancel: true, // Can only cancel if status is pending
     order_details: {
       total_amount: 1672000,
-      payment_method: "momo",
+      payment_method: "credit_card",
       delivery_address: "123 Nguyen Hue Street, District 1, TP Hồ Chí Minh",
       items: [
         {
@@ -102,44 +92,32 @@ export async function cancelOrder(
   }
 }
 
-// Format tracking status for display
+// Update formatTrackingStatus to only handle the 4 statuses
 export function formatTrackingStatus(status: string): string {
   switch (status) {
     case "pending":
       return "Pending"
-    case "processing":
-      return "Processing"
-    case "shipped":
-      return "Shipped"
-    case "out_for_delivery":
-      return "Out for Delivery"
-    case "delivered":
-      return "Delivered"
+    case "approved":
+      return "Approved"
+    case "rejected":
+      return "Rejected"
     case "cancelled":
       return "Cancelled"
-    case "refunded":
-      return "Refunded"
     default:
       return status
   }
 }
 
-// Get status color
+// Update getStatusColor to only handle the 4 statuses
 export function getStatusColor(status: string): string {
   switch (status) {
     case "pending":
       return "bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
-    case "processing":
-      return "bg-blue-100 text-blue-800"
-    case "shipped":
-      return "bg-purple-100 text-purple-800"
-    case "out_for_delivery":
-      return "bg-orange-100 text-orange-800"
-    case "delivered":
+    case "approved":
       return "bg-green-100 text-green-800"
-    case "cancelled":
+    case "rejected":
       return "bg-red-100 text-red-800"
-    case "refunded":
+    case "cancelled":
       return "bg-gray-100 text-gray-800"
     default:
       return "bg-gray-100 text-gray-800"

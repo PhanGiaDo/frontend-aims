@@ -19,8 +19,6 @@ interface ActionLog {
 export default function ActionHistory({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [actions, setActions] = useState<ActionLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  // Remove const [searchTerm, setSearchTerm] = useState("")
-  // Remove const [activeTab, setActiveTab] = useState("all")
 
   useEffect(() => {
     if (open) {

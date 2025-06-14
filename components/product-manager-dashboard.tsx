@@ -116,10 +116,6 @@ export default function ProductManagerDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Product Management</h1>
-          <p className="text-muted-foreground">Manage your product catalog</p>
-        </div>
         <Button onClick={handleAddProduct} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Add Product
@@ -128,12 +124,6 @@ export default function ProductManagerDashboard() {
 
       {/* Products Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            All Products ({products.length})
-          </CardTitle>
-        </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">

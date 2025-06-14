@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { processCheckout, calculateShippingFees } from "@/lib/checkout-utils"
 import { VIETNAM_PROVINCES, RUSH_DELIVERY_TIME_SLOTS } from "@/lib/checkout-types"
-import type { CheckoutFormData, RushDeliveryInfo } from "@/lib/checkout-types"
+import type { CheckoutFormData } from "@/lib/checkout-types"
 import { ShoppingCart, Truck, CreditCard, MapPin, User, Phone, Mail, Clock, Zap } from "lucide-react"
 
 export default function CheckoutForm() {
@@ -42,19 +42,25 @@ export default function CheckoutForm() {
       province: "",
       shipping_message: "",
     },
-    orderLines: selectedItems.map((item) => ({
+    orderLineList: selectedItems.map((item) => ({
       product_id: item.product.product_id,
+      status: "pending" as const,
       quantity: item.quantity,
-      rush_order_using: false,
-      instructions: "",
+      total_Fee: item.product.price * item.quantity,
+      delivery_time: null,
+      instructions: null,
+      rush_order: false,
     })),
-    rushDeliveryInfo: [],
     paymentMethod: "cod",
+    status: "pending",
+    total_after_VAT: total,
+    total_before_VAT: subtotal,
+    vat: vat,
   })
 
   // Calculate shipping fees
   const shippingCalculation = formData.deliveryInfo.province
-    ? calculateShippingFees(formData.deliveryInfo.province, state.items, formData.orderLines)
+    ? calculateShippingFees(formData.deliveryInfo.province, state.items, formData.orderLineList)
     : {
         regularShipping: 0,
         rushShipping: 0,
@@ -82,10 +88,9 @@ export default function CheckoutForm() {
     e.preventDefault()
 
     // Validate rush delivery info
-    const rushItems = formData.orderLines.filter((line) => line.rush_order_using)
+    const rushItems = formData.orderLineList.filter((line) => line.rush_order)
     for (const rushItem of rushItems) {
-      const rushInfo = formData.rushDeliveryInfo.find((info) => info.product_id === rushItem.product_id)
-      if (!rushInfo || !rushInfo.delivery_time) {
+      if (!rushItem.delivery_time) {
         toast({
           title: "Missing rush delivery information",
           description: "Please provide delivery time for all rush delivery items",
@@ -98,7 +103,7 @@ export default function CheckoutForm() {
     setIsProcessing(true)
 
     try {
-      const result = await processCheckout(formData, state.items, { subtotal, vat, total }, shippingCalculation)
+      const result = await processCheckout(formData, shippingCalculation)
 
       if (result.success) {
         // Clear the cart after successful payment
@@ -139,37 +144,20 @@ export default function CheckoutForm() {
   const updateOrderLine = (productId: number, field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
-      orderLines: prev.orderLines.map((line) => (line.product_id === productId ? { ...line, [field]: value } : line)),
+      orderLineList: prev.orderLineList.map((line) =>
+        line.product_id === productId ? { ...line, [field]: value } : line,
+      ),
     }))
 
-    // If disabling rush order, remove rush delivery info
-    if (field === "rush_order_using" && !value) {
+    // If disabling rush order, clear delivery_time and instructions
+    if (field === "rush_order" && !value) {
       setFormData((prev) => ({
         ...prev,
-        rushDeliveryInfo: prev.rushDeliveryInfo.filter((info) => info.product_id !== productId),
+        orderLineList: prev.orderLineList.map((line) =>
+          line.product_id === productId ? { ...line, delivery_time: null, instructions: null } : line,
+        ),
       }))
     }
-  }
-
-  const updateRushDeliveryInfo = (productId: number, field: keyof RushDeliveryInfo, value: string) => {
-    setFormData((prev) => {
-      const existingIndex = prev.rushDeliveryInfo.findIndex((info) => info.product_id === productId)
-
-      if (existingIndex >= 0) {
-        // Update existing rush delivery info
-        const updated = [...prev.rushDeliveryInfo]
-        updated[existingIndex] = { ...updated[existingIndex], [field]: value }
-        return { ...prev, rushDeliveryInfo: updated }
-      } else {
-        // Create new rush delivery info
-        const newInfo: RushDeliveryInfo = {
-          product_id: productId,
-          delivery_time: field === "delivery_time" ? value : "",
-          instructions: field === "instructions" ? value : "",
-        }
-        return { ...prev, rushDeliveryInfo: [...prev.rushDeliveryInfo, newInfo] }
-      }
-    })
   }
 
   return (
@@ -280,9 +268,8 @@ export default function CheckoutForm() {
           </CardHeader>
           <CardContent className="space-y-4">
             {selectedItems.map((item) => {
-              const orderLine = formData.orderLines.find((line) => line.product_id === item.product.product_id)
-              const rushInfo = formData.rushDeliveryInfo.find((info) => info.product_id === item.product.product_id)
-              const isRushOrder = orderLine?.rush_order_using || false
+              const orderLine = formData.orderLineList.find((line) => line.product_id === item.product.product_id)
+              const isRushOrder = orderLine?.rush_order || false
 
               return (
                 <div key={item.product.product_id} className="border rounded-lg p-4 space-y-3">
@@ -309,9 +296,7 @@ export default function CheckoutForm() {
                       <Checkbox
                         id={`rush-${item.product.product_id}`}
                         checked={isRushOrder}
-                        onCheckedChange={(checked) =>
-                          updateOrderLine(item.product.product_id, "rush_order_using", checked)
-                        }
+                        onCheckedChange={(checked) => updateOrderLine(item.product.product_id, "rush_order", checked)}
                         disabled={!item.product.rush_order_supported}
                       />
                       <Label htmlFor={`rush-${item.product.product_id}`} className="text-sm">
@@ -333,10 +318,8 @@ export default function CheckoutForm() {
                             Preferred Delivery Time *
                           </Label>
                           <Select
-                            value={rushInfo?.delivery_time || ""}
-                            onValueChange={(value) =>
-                              updateRushDeliveryInfo(item.product.product_id, "delivery_time", value)
-                            }
+                            value={orderLine?.delivery_time || ""}
+                            onValueChange={(value) => updateOrderLine(item.product.product_id, "delivery_time", value)}
                             required
                           >
                             <SelectTrigger className="mt-1">
@@ -361,10 +344,8 @@ export default function CheckoutForm() {
                           </Label>
                           <Textarea
                             id={`rush-instructions-${item.product.product_id}`}
-                            value={rushInfo?.instructions || ""}
-                            onChange={(e) =>
-                              updateRushDeliveryInfo(item.product.product_id, "instructions", e.target.value)
-                            }
+                            value={orderLine?.instructions || ""}
+                            onChange={(e) => updateOrderLine(item.product.product_id, "instructions", e.target.value)}
                             placeholder="Special instructions for rush delivery..."
                             className="mt-1 text-sm"
                             rows={2}
@@ -407,6 +388,7 @@ export default function CheckoutForm() {
             <RadioGroup
               value={formData.paymentMethod}
               onValueChange={(value: any) => setFormData((prev) => ({ ...prev, paymentMethod: value }))}
+              className="space-y-2"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="cod" id="cod" />
@@ -414,7 +396,7 @@ export default function CheckoutForm() {
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="momo" id="momo" />
-                <Label htmlFor="momo">MoMo E-Wallet</Label>
+                <Label htmlFor="momo">Momo E-Wallet</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="vnpay" id="vnpay" />

@@ -15,7 +15,6 @@ import { formatCurrency } from "@/lib/utils"
 import { cancelOrder } from "@/lib/tracking-utils"
 import type { OrderTrackingInfo } from "@/lib/tracking-types"
 import { AlertTriangle, RefreshCw } from "lucide-react"
-import { formatPaymentMethod } from "@/lib/order-utils"
 
 interface OrderCancellationProps {
   orderInfo: OrderTrackingInfo
@@ -87,8 +86,12 @@ export default function OrderCancellation({ orderInfo, onClose, onSuccess }: Ord
                 Refund amount:{" "}
                 <span className="font-semibold">{formatCurrency(orderInfo.order_details.total_amount)}</span>
               </p>
-              <p>Refund method: {formatPaymentMethod(orderInfo.order_details.payment_method)}</p>
+              <p>
+                Refund method:{" "}
+                {orderInfo.order_details.payment_method === "credit_card" ? "Credit Card" : "Bank Transfer"}
+              </p>
               <p>Processing time: 3-5 business days</p>
+              <p className="text-xs">Note: Only pending orders can be cancelled</p>
             </div>
           </div>
         </div>

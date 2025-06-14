@@ -15,7 +15,6 @@ import { getOrderTracking, formatTrackingStatus, getStatusColor, formatTrackingD
 import type { OrderTrackingInfo } from "@/lib/tracking-types"
 import { Search, Package, MapPin, Clock, Truck, Phone, Mail, User, Zap } from "lucide-react"
 import OrderCancellation from "./order-cancellation"
-import { formatPaymentMethod } from "@/lib/order-utils"
 
 export default function OrderTracking() {
   const [trackingCode, setTrackingCode] = useState("")
@@ -92,11 +91,9 @@ export default function OrderTracking() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="tracking-code">Order Tracking Code</Label>
             <div className="flex gap-2 mt-1">
               <Input
                 id="tracking-code"
-                placeholder="e.g., AIMS-12345-ABC"
                 value={trackingCode}
                 onChange={(e) => setTrackingCode(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -107,9 +104,6 @@ export default function OrderTracking() {
               </Button>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Enter the tracking code sent to your email after placing the order
-          </p>
         </CardContent>
       </Card>
 
@@ -146,7 +140,11 @@ export default function OrderTracking() {
                   <div>
                     <span className="font-medium">Payment Method:</span>
                     <div className="text-muted-foreground">
-                      {formatPaymentMethod(orderInfo.order_details.payment_method)}
+                      {orderInfo.order_details.payment_method === "credit_card"
+                        ? "Credit Card"
+                        : orderInfo.order_details.payment_method === "bank_transfer"
+                          ? "Bank Transfer"
+                          : "Cash on Delivery"}
                     </div>
                   </div>
                 </div>
@@ -202,8 +200,14 @@ export default function OrderTracking() {
                   <div className="flex items-start gap-2">
                     <Clock className="h-4 w-4 mt-0.5 text-muted-foreground" />
                     <div>
-                      <div className="font-medium">Estimated Delivery</div>
-                      <div className="text-muted-foreground">3-5 business days</div>
+                      <div className="font-medium">Order Status</div>
+                      <div className="text-muted-foreground">
+                        {orderInfo.current_status === "pending" && "Your order is being processed"}
+                        {orderInfo.current_status === "approved" &&
+                          "Your order has been approved and will be shipped soon"}
+                        {orderInfo.current_status === "rejected" && "Your order has been rejected"}
+                        {orderInfo.current_status === "cancelled" && "Your order has been cancelled"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -264,7 +268,7 @@ export default function OrderTracking() {
           </Card>
 
           {/* Cancel Order Section */}
-          {orderInfo.can_cancel && (
+          {orderInfo.can_cancel && orderInfo.current_status === "pending" && (
             <div className="text-center mb-8">
               <Button variant="destructive" onClick={() => setShowCancellation(true)}>
                 Cancel Order

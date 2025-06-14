@@ -10,47 +10,24 @@ export interface DeliveryInformation {
   shipping_fee: number
 }
 
-// Order interface
-export interface Order {
-  order_id?: number
-  delivery_id: number
-  total_before_vat: number
-  total_after_vat: number
-  status: string
-  vat: number
-}
-
-// Order Line interface
-export interface OrderLine {
-  odline_id?: number
-  order_id: number
-  product_id: number
-  status: string
-  quantity: number
-  total_fee: number
-  rush_order_using: boolean
-  delivery_time?: string
-  instructions?: string
-}
-
-// Rush delivery information
-export interface RushDeliveryInfo {
-  product_id: number
-  delivery_time: string
-  instructions: string
-}
-
-// Checkout form data interface
+// Simplified checkout form data interface for frontend
 export interface CheckoutFormData {
   deliveryInfo: Omit<DeliveryInformation, "delivery_id" | "shipping_fee">
-  orderLines: Array<{
+  orderLineList: Array<{
     product_id: number
+    status: "pending"
     quantity: number
-    rush_order_using: boolean
-    instructions?: string
+    total_Fee: number
+    delivery_time: string | null
+    instructions: string | null
+    rush_order: boolean
   }>
-  rushDeliveryInfo: RushDeliveryInfo[]
   paymentMethod: "cod" | "momo" | "vnpay"
+  // Order totals for backend
+  status: "pending"
+  total_after_VAT: number
+  total_before_VAT: number
+  vat: number
 }
 
 // Shipping calculation result

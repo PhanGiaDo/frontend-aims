@@ -89,7 +89,7 @@ export default function OrderSummary() {
           className="w-full"
           size="lg"
         >
-          {selectedItems.length === 0 ? "Select Items to Checkout" : `Checkout (${selectedCount} items)`}
+          {selectedItems.length === 0 ? "Select Items to Checkout" : `Checkout`}
         </Button>
       </CardContent>
     </Card>
